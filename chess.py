@@ -57,9 +57,26 @@ class King(Piece):
         super().__init__(player, square)
         self.image = w_king_image if self.color == "W" else b_king_image
         player.king = self
+        self.has_moved = False
+
+    def can_castle(self):
+        i = self.player.king_row
+        castles = []
+        short = [[6, i], [5, i]]
+        long = [[1, i], [2, i], [3, i]]
+        if self.has_moved or is_in_check(self.player):
+            return castles
+        for piece in self.player.pieces:
+            if isinstance(piece, Rook) and piece.has_moved == False:
+                if piece.square[0] == 0 and all(x not in occ_sqs() for x in long):
+                    castles.append("O-O-O")
+                elif piece.square[0] == 7 and all(x not in occ_sqs() for x in short):
+                    castles.append("O-O")
+        return castles
+        
 
     def get_moves(self):
-        moves = get_king_moves(self)
+        moves = get_king_moves(self) + self.can_castle()
         return look_for_checks(self, moves)
 
 class Queen(Piece):
@@ -75,6 +92,7 @@ class Rook(Piece):
     def __init__(self, player, square):
         super().__init__(player, square)
         self.image = w_rook_image if self.color == "W" else b_rook_image
+        self.has_moved = False
 
     def get_moves(self):
         moves = get_rook_moves(self)
@@ -200,6 +218,10 @@ def look_for_checks(piece, moves):
         pc, sq = make_move(piece, move)
         if is_in_check(piece.player):
             moves.remove(move)
+        if pc == 4:
+            piece.square[0] = 4
+            sq[0].square[0] = sq[1]
+            continue
         piece.square = sq
         if pc:
             enemy(piece.player).pieces.append(pc)
@@ -238,6 +260,19 @@ def is_in_check(player):
     return False
 
 def make_move(piece, square):
+    if square == "O-O-O":
+        piece.square[0] = 2
+        for rook in piece.player.pieces:
+            if rook.square[0] == 0:
+                print("hi")
+                rook.square[0] = 3
+                return 4, (rook, 0)
+    if square == "O-O":
+        piece.square[0] = 6
+        for rook in piece.player.pieces:
+            if rook.square[0] == 7:
+                rook.square[0] = 5
+                return 4, (rook, 7)
     remember_piece = None
     for element in enemy(piece.player).pieces:
         if element.square == square:
@@ -254,7 +289,16 @@ def draw_screen(winner):
         window.blit(piece.image, piece.get_coords())
     try:
         for mark in marks:
-            window.blit(mark_image, (mark[0]*100, mark[1]*100))
+            if mark == "O-O":
+                cd0 = 600
+                cd1 = turn.king_row*100
+            elif mark == "O-O-O":
+                cd0 = 200
+                cd1 = turn.king_row*100
+            else:
+                cd0 = mark[0]*100
+                cd1 = mark[1]*100
+            window.blit(mark_image, (cd0, cd1))
     except:
         pass
     if winner:
@@ -269,11 +313,12 @@ def draw_screen(winner):
     pygame.display.update()
 
 def chess():
-    global marks
+    global marks, turn
     spawn_pieces()
     selected_piece = False
     turn = WHITE
     winner = None
+    castles = [2,6]
 
     game = True
     run = True
@@ -290,12 +335,19 @@ def chess():
 
                     if selected_piece:
                         for piece in turn.pieces:
+                            if "O-O-O" in marks and m_pos[0] == 2:
+                                m_pos = "O-O-O"
+                            if "O-O" in marks and m_pos[0] == 6:
+                                m_pos = "O-O"
                             if piece == selected_piece and m_pos in marks:
                                 make_move(piece, m_pos)
+                                if isinstance(piece, (King, Rook)):
+                                    piece.has_moved = True
                                 if isinstance(piece, Pawn) and m_pos[1] in (0, 7):
                                     piece.player.pieces.remove(piece)
                                     piece = Queen(piece.player, piece.square)
                                 turn = enemy(turn)
+                                print(turn.king.can_castle())
                                 if turn.has_moves() == False:
                                     game = False
                                 break
