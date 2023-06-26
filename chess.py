@@ -74,7 +74,6 @@ class King(Piece):
                     castles.append("O-O")
         return castles
         
-
     def get_moves(self):
         moves = get_king_moves(self) + self.can_castle()
         return look_for_checks(self, moves)
@@ -128,8 +127,8 @@ class Pawn(Piece):
         indic = self.move_indicator
         if [square[0], square[1]+indic] not in occ_sqs():
             moves.append([square[0], square[1]+indic])
-        if square[1] == self.player.pawn_row and [square[0], square[1]+2*indic] not in occ_sqs():
-            moves.append([square[0], square[1]+2*indic])
+            if square[1] == self.player.pawn_row and [square[0], square[1]+2*indic] not in occ_sqs():
+                moves.append([square[0], square[1]+2*indic])
 
         possible_attacks = ([square[0]-1, square[1]+indic], [square[0]+1, square[1]+indic])
         for piece in enemy(self.player).pieces:
