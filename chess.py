@@ -321,6 +321,7 @@ def chess():
     turn = WHITE
     winner = None
     menu = True
+    game = False
     
     run = True
     while run:
@@ -382,11 +383,16 @@ def chess():
                                 selected_piece = piece
                                 marks = piece.get_moves()
                                 break
-            else:
+            elif run:
                 if is_in_check(turn):
                     winner = WHITE if turn == BLACK else BLACK
                 else:
                     winner = "Stalemate"
+                quit = pygame.Rect(370, 420, 50, 50)
+                if event.type == pygame.MOUSEBUTTONUP:
+                    m_pos = pygame.mouse.get_pos()
+                    if quit.collidepoint(m_pos):
+                        run = False
         draw_screen(winner)
 
 chess()
