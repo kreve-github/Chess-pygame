@@ -1,5 +1,6 @@
 import pygame
 import os
+import webbrowser
 
 window = pygame.display.set_mode((800,800))
 pygame.display.set_caption("Chess")
@@ -22,6 +23,7 @@ white_win = pygame.image.load(os.path.join("Assets", 'WhiteWin.png')).convert_al
 black_win = pygame.image.load(os.path.join("Assets", 'BlackWin.png')).convert_alpha()
 stalemate = pygame.image.load(os.path.join("Assets", 'Stalemate.png')).convert_alpha()
 insuff_mat = pygame.image.load(os.path.join("Assets", 'InsuffMat.png')).convert_alpha()
+main_menu = pygame.image.load(os.path.join("Assets", 'MainMenu.png')).convert_alpha()
 
 class Player:
     def __init__(self, color, king_row, pawn_row):
@@ -284,6 +286,8 @@ def make_move(piece, square):
 
 def draw_screen(winner):
     window.blit(checkboard_image, (0, 0))
+    if menu:
+        window.blit(main_menu, (0, 0))
     for piece in active_pieces():
         window.blit(piece.image, piece.get_coords())
     try:
@@ -312,20 +316,39 @@ def draw_screen(winner):
     pygame.display.update()
 
 def chess():
-    global marks, turn
-    spawn_pieces()
+    global marks, turn, menu
     selected_piece = False
     turn = WHITE
     winner = None
-    castles = [2,6]
-
-    game = True
+    menu = True
+    
     run = True
     while run:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+
+            while menu:
+                start = pygame.Rect(285, 378, 230, 45)
+                h2p = pygame.Rect(285, 478, 230, 45)
+                quit = pygame.Rect(285, 578, 230, 45)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        menu = False
+                        run = False
+                    if event.type == pygame.MOUSEBUTTONUP:
+                        m_pos = pygame.mouse.get_pos()
+                        if start.collidepoint(m_pos):
+                            game = True
+                            menu = False
+                            spawn_pieces()
+                        if quit.collidepoint(m_pos):
+                            run = False
+                            menu = False
+                        if h2p.collidepoint(m_pos):
+                            webbrowser.open('https://www.chess.com/learn-how-to-play-chess')
+                draw_screen(None)
 
             if game:
                 if event.type == pygame.MOUSEBUTTONUP:
@@ -346,7 +369,6 @@ def chess():
                                     piece.player.pieces.remove(piece)
                                     piece = Queen(piece.player, piece.square)
                                 turn = enemy(turn)
-                                print(turn.king.can_castle())
                                 if turn.has_moves() == False:
                                     game = False
                                 break
